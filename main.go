@@ -10,10 +10,6 @@ import (
 	"syscall"
 )
 
-const (
-	token  = "TOKEN"
-	chatId = "CHAT_ID"
-)
 
 const (
 	welcome      = "Привет, я связующая бездна"
@@ -44,12 +40,12 @@ func main() {
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
 	conf := configs.InitConf()
 	bot, updates := sotatgbot.StartSotaBot(conf.Token)
 	users, err := configs.InitUsers()
 	go func(users map[int64]bool) {
 		<-quit
-		println("AAAAA")
 		err := configs.SaveUsers(users)
 		if err != nil {
 			log.Fatalf("error getting users: %v", err)
