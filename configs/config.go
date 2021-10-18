@@ -10,8 +10,18 @@ import (
 )
 
 type Conf struct {
-	Token string
-	Chat  int64
+	Token    string
+	Chat     int64
+	Postgres PostgresConfig
+}
+
+type PostgresConfig struct {
+	Host     string
+	Port     string
+	Username string
+	DBName   string
+	SSLMode  string
+	Password string
 }
 
 func InitConf() *Conf {
@@ -29,8 +39,8 @@ func envVar(local bool) *Conf {
 			return &Conf{}
 		}
 	}
-	chat:=os.Getenv("CHAT_ID")
-	chatInt,err:=strconv.Atoi(chat)
+	chat := os.Getenv("CHAT_ID")
+	chatInt, err := strconv.Atoi(chat)
 	if err != nil {
 		println(err.Error())
 		return &Conf{}
@@ -38,6 +48,14 @@ func envVar(local bool) *Conf {
 	return &Conf{
 		os.Getenv("TOKEN"),
 		int64(chatInt),
+		PostgresConfig{
+			Host:     os.Getenv("POSTGRES_HOST"),
+			Port:     os.Getenv("POSTGRES_PORT"),
+			Username: os.Getenv("POSTGRES_USERNAME"),
+			DBName:   os.Getenv("POSTGRES_DBNAME"),
+			SSLMode:  os.Getenv("POSTGRES_SSL"),
+			Password: os.Getenv("POSTGRES_PASS"),
+		},
 	}
 }
 
