@@ -3,10 +3,7 @@ version: '3.8'
 services:
 
   redis:
-    image: 'bitnami/redis:latest'
-    restart: unless-stopped
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
+    image: 'redis:latest'
     env_file:
       - .env
 

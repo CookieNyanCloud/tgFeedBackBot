@@ -1,7 +1,7 @@
 run:
 	go run main.go
 
-up:
-	docker-compose up tg-sota-feedback
+build:
+	docker-compose up --build
 
-.PHONY: run up
+.PHONY: run build
