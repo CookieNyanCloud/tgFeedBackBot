@@ -71,14 +71,11 @@ func (a *Actions) StartMsg(chatId int64) {
 	a.Keyboard = tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(Next)))
 	msg.ReplyMarkup = a.Keyboard
 	err := a.Cache.SetState(a.Ctx, chatId, false)
-	if err == redis.Nil {
+	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
+		return
 	}
 	_, _ = a.Bot.Send(msg)
 }
@@ -86,13 +83,15 @@ func (a *Actions) StartMsg(chatId int64) {
 func (a *Actions) ReplyToMsg(chatId int, txt string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
 	if err == redis.Nil {
+		//msgtext := fmt.Sprintf(redErr, err)
+		//msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		//_, _ = a.Bot.Send(msg)
+		return
+	}else if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
+		return
 	}
 	msg := tgbotapi.NewMessage(id, txt)
 	_, _ = a.Bot.Send(msg)
@@ -107,11 +106,7 @@ func (a *Actions) NextBack(chatId int64) {
 		))
 	msg.ReplyMarkup = a.Keyboard
 	err := a.Cache.SetState(a.Ctx, chatId, false)
-	if err == redis.Nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
+	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -127,11 +122,7 @@ func (a *Actions) HelpMsg(chatid int64) {
 		))
 	msg.ReplyMarkup = a.Keyboard
 	err := a.Cache.SetState(a.Ctx, chatid, false)
-	if err == redis.Nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
+	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -146,11 +137,7 @@ func (a *Actions) TellMsg(chatId int64) {
 			tgbotapi.NewKeyboardButton(Back2),
 		))
 	err := a.Cache.SetState(a.Ctx, chatId, true)
-	if err == redis.Nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
+	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -161,11 +148,7 @@ func (a *Actions) TellMsg(chatId int64) {
 
 func (a *Actions) SendMsg(chatId int64, msgId int) {
 	state, err := a.Cache.GetState(a.Ctx, chatId)
-	if err == redis.Nil {
-		msgtext := fmt.Sprintf(redErr, err)
-		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		_, _ = a.Bot.Send(msg)
-	} else if err != nil {
+	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
