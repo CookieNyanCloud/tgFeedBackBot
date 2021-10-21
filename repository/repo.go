@@ -1,49 +1,62 @@
 package repository
 
 import (
-	"fmt"
-	"github.com/jmoiron/sqlx"
+	"context"
+	"github.com/go-redis/redis/v8"
+	"strconv"
+	"time"
 )
 
 type Repo struct {
-	db *sqlx.DB
+	db *redis.Client
 }
-func NewRepo(db *sqlx.DB) *Repo {
+
+func NewRepo(db *redis.Client) *Repo {
 	return &Repo{db: db}
 }
 
 type Users struct {
-	Id int64
-	Date int
-}
-
-type Operations interface {
-	MakeSms(id int64, date int) error
-	GetId(txt string, date int) (int64, error)
-}
-
-func (r *Repo) MakeSms(id int64, txt string, date int) error{
-	fmt.Println(id,txt,date)
-	query := fmt.Sprintf(`INSERT INTO tgusers (tgid, txt, date)
-	VALUES($1, $2, $3)
-	ON CONFLICT (tgid)
-	DO
-	UPDATE SET txt = EXCLUDED.txt, date = EXCLUDED.date`)
-	_, err := r.db.Exec(query, id,txt,date)
-	if err != nil {
-		return err
-	}
-	return nil
+	MsgID int64
+	State bool
 }
 
 
-func (r *Repo) GetId(txt string, date int) (int64, error) {
-	fmt.Println(txt,date)
-	var id int64
-	query := fmt.Sprintf(`SELECT tgid FROM tgusers WHERE txt=$1 and date=$2`)
-	err := r.db.Get(&id, query, txt,date)
+type UsersInterface interface {
+	SetUser(ctx context.Context, userId int64, msgId int ) error
+	GetUser(ctx context.Context, msgId int) (int64, error)
+	SetState(ctx context.Context, userId int64, state bool) error
+	GetState(ctx context.Context, userId int) (bool, error)
+}
+
+func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
+	return r.db.Set(ctx,string(msgId),userId,time.Hour*24).Err()
+}
+
+func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
+	idStr, err:=r.db.Get(ctx,string(msgId)).Result()
 	if err != nil {
 		return 0,err
 	}
-	return id,nil
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return id,err
+}
+
+func (r *Repo) SetState(ctx context.Context, userId int64, state bool) error {
+	r.db.Set(ctx,string(userId),state,time.Hour*24)
+	return nil
+}
+
+func (r *Repo)GetState(ctx context.Context, userId int64) (bool, error) {
+	stateStr, err:=r.db.Get(ctx,string(userId)).Result()
+	if err != nil {
+		return false,err
+	}
+	state, err:= strconv.ParseBool(stateStr)
+	if err != nil {
+		return false,err
+	}
+	return state,err
 }

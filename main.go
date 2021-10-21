@@ -1,23 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
 	"github.com/CookieNyanCloud/tgFeedBackBot/repository"
-	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/postgres"
+	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
 	"github.com/CookieNyanCloud/tgFeedBackBot/sotatgbot"
+	"github.com/go-redis/redis/v8"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"log"
-	"math/rand"
 	"os"
 	"os/signal"
+	"time"
 
 	"syscall"
 )
 
 const (
+	none    = "Не знаю такой команды"
+	needTxt = "Добавьте текст к запросу, пожалуйста"
+	dbErr   = "что-то с базой:%s"
+
 	welcome      = "Привет, я связующая бездна"
 	next         = "Вперед"
 	back1        = "Назад в меню"
@@ -26,11 +30,6 @@ const (
 	msgNearStart = "Меню стартует здесь!"
 	tell         = "Рассказать о чем-то очень важном"
 	telltext     = "Таки да?"
-	none         = "Не знаю такой команды"
-	work         = "Работаем"
-	needTxt      = "Добавьте текст к запросу, пожалуйста"
-	needIndex    = "индекс для ответа:%d"
-	dbErr        = "что-то с базой:%s"
 	helpText     = `Не хлебом единым! Или хлебом?
 
 
@@ -47,32 +46,30 @@ ETC: 0x18ADb185fD627737Cb2458f0D6037F596D167f38`
 )
 
 func main() {
-
-	conf := configs.InitConf()
-	users, err := configs.InitUsers()
+	var ctx = context.Background()
+	conf, err := configs.InitConf()
 	if err != nil {
 		log.Fatalf("error getting users: %v", err)
 	}
 
-	postgresClient, err := postgres.NewClient(conf.Postgres)
+	redisClient, err := redisDB.NewDatabase(conf.Redis, ctx)
 	if err != nil {
 		log.Fatalf("error init db: %v", err)
 	}
-	repos := repository.NewRepo(postgresClient)
-
+	cache := repository.NewRepo(redisClient.Client)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
-	go func(users map[int64]bool, db *sqlx.DB) {
+	go func(ctx context.Context, db *redis.Client) {
 		<-quit
-		err := configs.SaveUsers(users)
-		if err != nil {
-			log.Fatalf("error getting users: %v", err)
-		}
+		const timeout = 5 * time.Second
+		ctx, shutdown := context.WithTimeout(context.Background(), timeout)
+		defer shutdown()
 		if err := db.Close(); err != nil {
 			log.Fatalf("error closing db: %v", err)
 		}
 		os.Exit(1)
-	}(users, postgresClient)
+
+	}(ctx, redisClient.Client)
 
 	bot, updates := sotatgbot.StartSotaBot(conf.Token)
 	for update := range updates {
@@ -83,35 +80,24 @@ func main() {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, welcome)
 			keyboard = tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(next)))
 			msg.ReplyMarkup = keyboard
-			users[update.Message.Chat.ID] = false
+			err := cache.SetState(ctx, update.Message.Chat.ID, false)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
+			}
 			_, _ = bot.Send(msg)
 			continue
 		}
 
 		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
-
-			var id int64
-			if update.Message.ReplyToMessage.ForwardFrom != nil {
-				id = int64(update.Message.ReplyToMessage.ForwardFrom.ID)
-
-			} else {
-				var txt string
-				if update.Message.ReplyToMessage.Text != "" {
-					txt = update.Message.ReplyToMessage.Text
-
-				} else if update.Message.ReplyToMessage.Caption != "" {
-					txt = update.Message.ReplyToMessage.Caption
-				} else {
-					msg := tgbotapi.NewMessage(conf.Chat, needTxt)
-					_, _ = bot.Send(msg)
-				}
-
-				id, err = repos.GetId(txt, update.Message.ReplyToMessage.ForwardDate)
-				if err != nil {
-					msgtext := fmt.Sprintf(dbErr, err)
-					msg := tgbotapi.NewMessage(conf.Chat, msgtext)
-					_, _ = bot.Send(msg)
-				}
+			id, err := cache.GetUser(ctx, update.Message.ReplyToMessage.MessageID)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
 			}
 			msg := tgbotapi.NewMessage(id, update.Message.Text)
 			_, _ = bot.Send(msg)
@@ -130,7 +116,13 @@ func main() {
 					tgbotapi.NewKeyboardButton(help),
 				))
 			msg.ReplyMarkup = keyBoard
-			users[update.Message.Chat.ID] = false
+			err := cache.SetState(ctx, update.Message.Chat.ID, false)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
+			}
 			_, _ = bot.Send(msg)
 
 		case help:
@@ -140,7 +132,13 @@ func main() {
 					tgbotapi.NewKeyboardButton(back1),
 				))
 			msg.ReplyMarkup = keyBoard
-			users[update.Message.Chat.ID] = false
+			err := cache.SetState(ctx, update.Message.Chat.ID, false)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
+			}
 			_, _ = bot.Send(msg)
 
 		case tell:
@@ -149,13 +147,32 @@ func main() {
 				tgbotapi.NewKeyboardButtonRow(
 					tgbotapi.NewKeyboardButton(back2),
 				))
-			users[update.Message.Chat.ID] = true
+			err := cache.SetState(ctx, update.Message.Chat.ID, true)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
+			}
 			msg.ReplyMarkup = keyBoard
 			_, _ = bot.Send(msg)
 
 		default:
-			if users[update.Message.Chat.ID] {
-				users[update.Message.Chat.ID] = true
+			state, err := cache.GetState(ctx, update.Message.Chat.ID)
+			if err != nil {
+				msgtext := fmt.Sprintf(dbErr, err)
+				msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+				_, _ = bot.Send(msg)
+				continue
+			}
+			if state {
+				err := cache.SetState(ctx, update.Message.Chat.ID, true)
+				if err != nil {
+					msgtext := fmt.Sprintf(dbErr, err)
+					msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+					_, _ = bot.Send(msg)
+					continue
+				}
 				msg := tgbotapi.ForwardConfig{
 					BaseChat: tgbotapi.BaseChat{
 						ChatID: conf.Chat,
@@ -167,28 +184,21 @@ func main() {
 					HideKeyboard: false,
 					Selective:    false,
 				}
-				msg.
-				var txt string
-				if update.Message.Text != "" {
-					txt = update.Message.Text
-				} else if update.Message.Caption != ""{
-					txt = update.Message.Caption
-				} else {
-					txt = fmt.Sprintf(needIndex,rand.Int())
-				}
-				_, _ = bot.Send(msg)
-				err = repos.MakeSms(update.Message.Chat.ID, txt, update.Message.Date)
+				forwarded, _ := bot.Send(msg)
+				err = cache.SetUser(ctx, update.Message.Chat.ID, forwarded.MessageID)
 				if err != nil {
 					msgtext := fmt.Sprintf(dbErr, err)
 					msg := tgbotapi.NewMessage(conf.Chat, msgtext)
 					_, _ = bot.Send(msg)
 				}
-			} else if update.Message.Caption == "" || update.Message.Text == "" {
-				users[update.Message.Chat.ID] = false
-				msg := tgbotapi.NewMessage(update.Message.Chat.ID, none)
-				_, _ = bot.Send(msg)
 			} else {
-				users[update.Message.Chat.ID] = false
+				err := cache.SetState(ctx, update.Message.Chat.ID, false)
+				if err != nil {
+					msgtext := fmt.Sprintf(dbErr, err)
+					msg := tgbotapi.NewMessage(conf.Chat, msgtext)
+					_, _ = bot.Send(msg)
+					continue
+				}
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, none)
 				_, _ = bot.Send(msg)
 			}

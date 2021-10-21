@@ -1,10 +1,8 @@
 package configs
 
 import (
-	"encoding/json"
 	"flag"
 	"github.com/joho/godotenv"
-	"io/ioutil"
 	"os"
 	"strconv"
 )
@@ -12,77 +10,52 @@ import (
 type Conf struct {
 	Token    string
 	Chat     int64
-	Postgres PostgresConfig
+	Redis RedisConf
 }
 
-type PostgresConfig struct {
-	Host     string
-	Port     string
-	Username string
-	DBName   string
-	SSLMode  string
+type RedisConf struct {
+	Addr     string
 	Password string
+	DB       int
 }
 
-func InitConf() *Conf {
+func InitConf() (*Conf, error) {
 	var local bool
 	flag.BoolVar(&local, "local", false, "хост")
 	flag.Parse()
 	return envVar(local)
 }
 
-func envVar(local bool) *Conf {
+func envVar(local bool) (*Conf, error) {
+
 	if local {
 		err := godotenv.Load(".env")
 		if err != nil {
-			println(err.Error())
-			return &Conf{}
+			return &Conf{}, err
 		}
 	}
+
 	chat := os.Getenv("CHAT_ID")
 	chatInt, err := strconv.Atoi(chat)
 	if err != nil {
 		println(err.Error())
-		return &Conf{}
+		return &Conf{}, err
 	}
+
+	redisDBstr := os.Getenv("REDIS_DB")
+	redisDB, err := strconv.Atoi(redisDBstr)
+	if err != nil {
+		println(err.Error())
+		return &Conf{}, err
+	}
+
 	return &Conf{
 		os.Getenv("TOKEN"),
 		int64(chatInt),
-		PostgresConfig{
-			Host:     os.Getenv("POSTGRES_HOST"),
-			Port:     os.Getenv("POSTGRES_PORT"),
-			Username: os.Getenv("POSTGRES_USERNAME"),
-			DBName:   os.Getenv("POSTGRES_DBNAME"),
-			SSLMode:  os.Getenv("POSTGRES_SSL"),
-			Password: os.Getenv("POSTGRES_PASS"),
+		RedisConf{
+			Addr:     os.Getenv("REDIS_ADDR"),
+			Password: os.Getenv("REDIS_PASSWORD"),
+			DB:       redisDB,
 		},
-	}
-}
-
-func InitUsers() (map[int64]bool, error) {
-	var users map[int64]bool
-	jsonFile, err := os.Open("users.json")
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return map[int64]bool{}, err
-	}
-	defer jsonFile.Close()
-	err = json.Unmarshal(byteValue, &users)
-	if err != nil {
-		return map[int64]bool{}, err
-	}
-	return users, nil
-}
-
-func SaveUsers(users map[int64]bool) error {
-	filePath := "users.json"
-	jsonUsers, err := json.Marshal(users)
-	if err != nil {
-		return err
-	}
-	err = ioutil.WriteFile(filePath, jsonUsers, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	}, nil
 }

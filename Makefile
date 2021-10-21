@@ -1,4 +1,7 @@
 run:
-	go run main.go -local
+	go run main.go
 
-.PHONY: run
+up:
+	docker-compose up tg-sota-feedback
+
+.PHONY: run up
