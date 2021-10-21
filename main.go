@@ -10,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
-	"math/rand"
 	"os"
 	"os/signal"
 
@@ -78,7 +77,9 @@ func main() {
 	for update := range updates {
 
 		keyboard := tgbotapi.ReplyKeyboardMarkup{}
-
+		if update.Message == nil {
+			continue
+		}
 		if update.Message.Command() == "start" {
 			msg := tgbotapi.NewMessage(update.Message.Chat.ID, welcome)
 			keyboard = tgbotapi.NewReplyKeyboard(tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(next)))
@@ -87,6 +88,7 @@ func main() {
 			_, _ = bot.Send(msg)
 			continue
 		}
+
 
 		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
 
@@ -102,8 +104,7 @@ func main() {
 				} else if update.Message.ReplyToMessage.Caption != "" {
 					txt = update.Message.ReplyToMessage.Caption
 				} else {
-					msg := tgbotapi.NewMessage(conf.Chat, needTxt)
-					_, _ = bot.Send(msg)
+					txt = ""
 				}
 
 				id, err = repos.GetId(txt, update.Message.ReplyToMessage.ForwardDate)
@@ -167,14 +168,14 @@ func main() {
 					HideKeyboard: false,
 					Selective:    false,
 				}
-				msg.
 				var txt string
 				if update.Message.Text != "" {
 					txt = update.Message.Text
 				} else if update.Message.Caption != ""{
 					txt = update.Message.Caption
 				} else {
-					txt = fmt.Sprintf(needIndex,rand.Int())
+					//txt = fmt.Sprintf(needIndex,rand.Int())
+					txt = ""
 				}
 				_, _ = bot.Send(msg)
 				err = repos.MakeSms(update.Message.Chat.ID, txt, update.Message.Date)
