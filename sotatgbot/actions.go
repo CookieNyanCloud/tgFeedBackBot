@@ -195,13 +195,16 @@ func (a *Actions) SendMsg(chatId int64, msgId int) {
 
 func (a *Actions) BanUser(msgId int) {
 	id, err := a.Cache.GetUser(a.Ctx, msgId)
+
+	_, _ = a.Bot.Send(tgbotapi.NewMessage(a.Cfg.Chat, string(id)))
+
 	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
 		return
 	}
-	err = a.Cache.SetBan(a.Ctx,id)
+	err = a.Cache.SetBan(a.Ctx, id)
 	if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
@@ -211,16 +214,14 @@ func (a *Actions) BanUser(msgId int) {
 }
 
 func (a *Actions) CheckBanUser(chatId int64) bool {
-	state, err:= a.Cache.GetBan(a.Ctx,chatId)
-	if err != nil && err!=redis.Nil {
+	state, err := a.Cache.GetBan(a.Ctx, chatId)
+	if err == redis.Nil {
+		return false
+	} else if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
 		return false
 	}
-	if err == redis.Nil{
-		return false
-	}
 	return state
 }
-

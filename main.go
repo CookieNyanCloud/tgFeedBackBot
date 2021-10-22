@@ -57,9 +57,6 @@ func main() {
 			continue
 		}
 
-		if act.CheckBanUser(update.Message.Chat.ID) {
-			continue
-		}
 		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
 			if update.Message.Text == "ban!" {
 				act.BanUser(update.Message.ReplyToMessage.MessageID)
@@ -84,8 +81,11 @@ func main() {
 			act.TellMsg(update.Message.Chat.ID)
 
 		default:
-			act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
-
+			if act.CheckBanUser(update.Message.Chat.ID) {
+				continue
+			} else {
+				act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
+			}
 		}
 	}
 }
