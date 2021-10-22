@@ -15,11 +15,6 @@ func NewRepo(db *redis.Client) *Repo {
 	return &Repo{db: db}
 }
 
-type Users struct {
-	MsgID int64
-	State bool
-}
-
 type UsersInterface interface {
 	SetUser(ctx context.Context, userId int64, msgId int) error
 	GetUser(ctx context.Context, msgId int) (int64, error)
@@ -30,12 +25,16 @@ type UsersInterface interface {
 }
 
 func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
-	return r.db.Set(ctx, string(msgId), userId, time.Hour*24).Err()
+	err:= r.db.Set(ctx, string(msgId), userId, time.Hour*24).Err()
+	if err != nil{
+		return err
+	}
+	return nil
 }
 
 func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 	idStr, err := r.db.Get(ctx, string(msgId)).Result()
-	if err != nil {
+	if err != nil{
 		return 0, err
 	}
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -63,14 +62,15 @@ func (r *Repo) GetState(ctx context.Context, userId int64) (bool, error) {
 }
 
 func (r *Repo) SetBan(ctx context.Context, userId int64) error {
-	idStr:= strconv.FormatInt(userId,10)
+	idStr := strconv.FormatInt(userId, 10)
 	r.db.Set(ctx, "ban_"+idStr, true, time.Hour*100)
 	return nil
 }
 
 func (r *Repo) GetBan(ctx context.Context, userId int64) (bool, error) {
-	idStr:= strconv.FormatInt(userId,10)
+	idStr := strconv.FormatInt(userId, 10)
 	stateStr, err := r.db.Get(ctx, "ban_"+idStr).Result()
+
 	if err != nil {
 		return false, err
 	}

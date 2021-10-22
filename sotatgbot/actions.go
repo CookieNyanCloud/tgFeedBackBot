@@ -85,12 +85,7 @@ func (a *Actions) StartMsg(chatId int64) {
 
 func (a *Actions) ReplyToMsg(chatId int, txt string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
-	if err == redis.Nil {
-		//msgtext := fmt.Sprintf(redErr, err)
-		//msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
-		//_, _ = a.Bot.Send(msg)
-		return
-	} else if err != nil {
+	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -151,7 +146,7 @@ func (a *Actions) TellMsg(chatId int64) {
 
 func (a *Actions) SendMsg(chatId int64, msgId int) {
 	state, err := a.Cache.GetState(a.Ctx, chatId)
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -195,10 +190,7 @@ func (a *Actions) SendMsg(chatId int64, msgId int) {
 
 func (a *Actions) BanUser(msgId int) {
 	id, err := a.Cache.GetUser(a.Ctx, msgId)
-
-	_, _ = a.Bot.Send(tgbotapi.NewMessage(a.Cfg.Chat, string(id)))
-
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
