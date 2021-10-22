@@ -218,6 +218,9 @@ func (a *Actions) CheckBanUser(chatId int64) bool {
 		_, _ = a.Bot.Send(msg)
 		return false
 	}
+	if err == redis.Nil{
+		return false
+	}
 	return state
 }
 
