@@ -11,6 +11,7 @@ import (
 
 const (
 	redErr       = "error in redis:%v\n"
+	banErr       = "праблема с баном: %v\n"
 	welcome      = "Привет, я связующая бездна"
 	none         = "Не знаю такой команды"
 	Next         = "Вперед"
@@ -64,6 +65,8 @@ type ActionsInterface interface {
 	HelpMsg(chatId int64)
 	TellMsg(chatId int64)
 	SendMsg(chatId int64, msgId int)
+	BanUser(msgId int)
+	CheckBanUser(chatId int64)
 }
 
 func (a *Actions) StartMsg(chatId int64) {
@@ -87,7 +90,7 @@ func (a *Actions) ReplyToMsg(chatId int, txt string) {
 		//msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		//_, _ = a.Bot.Send(msg)
 		return
-	}else if err != nil {
+	} else if err != nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
@@ -189,3 +192,32 @@ func (a *Actions) SendMsg(chatId int64, msgId int) {
 		_, _ = a.Bot.Send(msg)
 	}
 }
+
+func (a *Actions) BanUser(msgId int) {
+	id, err := a.Cache.GetUser(a.Ctx, msgId)
+	if err != nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return
+	}
+	err = a.Cache.SetBan(a.Ctx,id)
+	if err != nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return
+	}
+}
+
+func (a *Actions) CheckBanUser(chatId int64) bool {
+	state, err:= a.Cache.GetBan(a.Ctx,chatId)
+	if err != nil && err!=redis.Nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return false
+	}
+	return state
+}
+

@@ -26,6 +26,8 @@ type UsersInterface interface {
 	GetUser(ctx context.Context, msgId int) (int64, error)
 	SetState(ctx context.Context, userId int64, state bool) error
 	GetState(ctx context.Context, userId int) (bool, error)
+	SetBan(ctx context.Context, userId int64) error
+	GetBan(ctx context.Context, userId int) (bool, error)
 }
 
 func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
@@ -51,6 +53,23 @@ func (r *Repo) SetState(ctx context.Context, userId int64, state bool) error {
 
 func (r *Repo)GetState(ctx context.Context, userId int64) (bool, error) {
 	stateStr, err:=r.db.Get(ctx,string(userId)).Result()
+	if err != nil {
+		return false,err
+	}
+	state, err:= strconv.ParseBool(stateStr)
+	if err != nil {
+		return false,err
+	}
+	return state,err
+}
+
+func (r *Repo) SetBan(ctx context.Context, userId int64) error {
+	r.db.Set(ctx,"ban_"+string(userId),true,time.Hour*100)
+	return nil
+}
+
+func (r *Repo)GetBan(ctx context.Context, userId int64) (bool, error) {
+	stateStr, err:=r.db.Get(ctx,"ban_"+string(userId)).Result()
 	if err != nil {
 		return false,err
 	}

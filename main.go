@@ -56,9 +56,18 @@ func main() {
 			act.StartMsg(update.Message.Chat.ID)
 			continue
 		}
-		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
-			act.ReplyToMsg(update.Message.ReplyToMessage.MessageID, update.Message.Text)
+
+		if act.CheckBanUser(update.Message.Chat.ID) {
 			continue
+		}
+		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
+			if update.Message.Text == "ban!" {
+				act.BanUser(update.Message.ReplyToMessage.MessageID)
+				continue
+			} else {
+				act.ReplyToMsg(update.Message.ReplyToMessage.MessageID, update.Message.Text)
+				continue
+			}
 		} else if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage == nil {
 			continue
 		}
