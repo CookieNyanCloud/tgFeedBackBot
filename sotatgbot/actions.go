@@ -66,7 +66,7 @@ type ActionsInterface interface {
 	TellMsg(chatId int64)
 	SendMsg(chatId int64, msgId int)
 	BanUser(msgId int)
-	CheckBanUser(chatId int64)
+	CheckBanUser(chatId int64) bool
 }
 
 func (a *Actions) StartMsg(chatId int64) {
