@@ -54,12 +54,12 @@ func main() {
 		if update.Message.Command() == "start" {
 			act.StartMsg(update.Message.Chat.ID)
 			continue
-		} else if update.Message.IsCommand() {
+		} else if update.Message.IsCommand() || update.Message == nil{
 			continue
 		}
 
 
-		if act.CheckBanUser(update.Message.Chat.ID) {
+		if act.CheckBanUser(update.Message.Chat.ID){
 			continue
 		}
 
