@@ -54,7 +54,7 @@ func envVar(local bool) (*Conf, error) {
 		int64(chatInt),
 		RedisConf{
 			Addr:     os.Getenv("REDIS_ADDR"),
-			Password: os.Getenv("REDIS_PASSWORD"),
+			Password: os.Getenv("REDIS_PASS"),
 			DB:       redisDB,
 		},
 	}, nil
