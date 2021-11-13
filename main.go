@@ -51,15 +51,18 @@ func main() {
 	bot, updates := sotatgbot.StartSotaBot(conf.Token)
 	act := sotatgbot.NewActions(cache, bot, ctx, conf)
 	for update := range updates {
-		if update.Message.Command() == "start" {
-			act.StartMsg(update.Message.Chat.ID)
-			continue
-		} else if update.Message.IsCommand() || update.Message == nil{
+		if update.Message == nil {
 			continue
 		}
 
+		if update.Message.Command() == "start" {
+			act.StartMsg(update.Message.Chat.ID)
+			continue
+		} else if update.Message.IsCommand() {
+			continue
+		}
 
-		if act.CheckBanUser(update.Message.Chat.ID){
+		if act.CheckBanUser(update.Message.Chat.ID) {
 			continue
 		}
 
