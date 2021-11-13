@@ -54,7 +54,10 @@ func main() {
 		if update.Message.Command() == "start" {
 			act.StartMsg(update.Message.Chat.ID)
 			continue
+		} else if update.Message.IsCommand() {
+			continue
 		}
+
 
 		if act.CheckBanUser(update.Message.Chat.ID) {
 			continue
