@@ -7,7 +7,6 @@ import (
 	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
 	"github.com/CookieNyanCloud/tgFeedBackBot/sotatgbot"
 	"github.com/go-redis/redis/v8"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"os"
 	"os/signal"
@@ -35,6 +34,7 @@ func main() {
 		log.Fatalf(dbErr, err)
 	}
 	cache := repository.NewRepo(redisClient.Client)
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	go func(ctx context.Context, db *redis.Client) {
@@ -49,11 +49,14 @@ func main() {
 	}(ctx, redisClient.Client)
 
 	bot, updates := sotatgbot.StartSotaBot(conf.Token)
-	keyboard := tgbotapi.ReplyKeyboardMarkup{}
-	act := sotatgbot.NewActions(cache, bot, ctx, keyboard, conf)
+	act := sotatgbot.NewActions(cache, bot, ctx, conf)
 	for update := range updates {
 		if update.Message.Command() == "start" {
 			act.StartMsg(update.Message.Chat.ID)
+			continue
+		}
+
+		if act.CheckBanUser(update.Message.Chat.ID) {
 			continue
 		}
 
@@ -69,23 +72,7 @@ func main() {
 			continue
 		}
 
-		switch update.Message.Text {
+		act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
 
-		case sotatgbot.Next, sotatgbot.Back1, sotatgbot.Back2:
-			act.NextBack(update.Message.Chat.ID)
-
-		case sotatgbot.Help:
-			act.HelpMsg(update.Message.Chat.ID)
-
-		case sotatgbot.Tell:
-			act.TellMsg(update.Message.Chat.ID)
-
-		default:
-			if act.CheckBanUser(update.Message.Chat.ID) {
-				continue
-			} else {
-				act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
-			}
-		}
 	}
 }

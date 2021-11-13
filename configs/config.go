@@ -8,8 +8,8 @@ import (
 )
 
 type Conf struct {
-	Token    string
-	Chat     int64
+	Token string
+	Chat  int64
 	Redis RedisConf
 }
 

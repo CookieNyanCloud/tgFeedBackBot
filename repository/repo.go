@@ -18,15 +18,13 @@ func NewRepo(db *redis.Client) *Repo {
 type UsersInterface interface {
 	SetUser(ctx context.Context, userId int64, msgId int) error
 	GetUser(ctx context.Context, msgId int) (int64, error)
-	SetState(ctx context.Context, userId int64, state bool) error
-	GetState(ctx context.Context, userId int64) (bool, error)
 	SetBan(ctx context.Context, userId int64) error
 	GetBan(ctx context.Context, userId int64) (bool, error)
 }
 
 func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
-	err:= r.db.Set(ctx, string(msgId), userId, time.Hour*24).Err()
-	if err != nil{
+	err := r.db.Set(ctx, string(msgId), userId, time.Hour*24).Err()
+	if err != nil {
 		return err
 	}
 	return nil
@@ -34,7 +32,7 @@ func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
 
 func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 	idStr, err := r.db.Get(ctx, string(msgId)).Result()
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -42,23 +40,6 @@ func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 		panic(err)
 	}
 	return id, err
-}
-
-func (r *Repo) SetState(ctx context.Context, userId int64, state bool) error {
-	r.db.Set(ctx, string(userId), state, 0)
-	return nil
-}
-
-func (r *Repo) GetState(ctx context.Context, userId int64) (bool, error) {
-	stateStr, err := r.db.Get(ctx, string(userId)).Result()
-	if err != nil {
-		return false, err
-	}
-	state, err := strconv.ParseBool(stateStr)
-	if err != nil {
-		return false, err
-	}
-	return state, err
 }
 
 func (r *Repo) SetBan(ctx context.Context, userId int64) error {
