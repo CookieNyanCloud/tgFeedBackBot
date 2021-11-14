@@ -77,7 +77,6 @@ func main() {
 		} else if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage == nil {
 			continue
 		}
-
 		act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
 
 	}

@@ -49,10 +49,13 @@ func (a *Actions) StartMsg(chatId int64) {
 
 func (a *Actions) ReplyToMsg(chatId int, txt string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
+		return
+	} else if err == redis.Nil {
+		fmt.Println("no user")
 		return
 	}
 	msg := tgbotapi.NewMessage(id, txt)
