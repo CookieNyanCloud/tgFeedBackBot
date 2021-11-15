@@ -1,3 +1,4 @@
+[![GoReportCard](https://goreportcard.com/badge/github.com/cookienyancloud/tgfeedbackbot)](https://goreportcard.com/report/github.com/cookienyancloud/tgfeedbackbot)
 # Бот обратной связи
 
 ## описание
