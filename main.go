@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
 	"github.com/CookieNyanCloud/tgFeedBackBot/repository"
 	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
@@ -39,6 +40,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	go func(ctx context.Context, db *redis.Client) {
 		<-quit
+		fmt.Println("shutdown")
 		const timeout = 5 * time.Second
 		ctx, shutdown := context.WithTimeout(context.Background(), timeout)
 		defer shutdown()
