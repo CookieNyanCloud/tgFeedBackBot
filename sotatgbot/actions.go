@@ -86,10 +86,13 @@ func (a *Actions) SendMsg(chatId int64, msgId int) {
 
 func (a *Actions) BanUser(msgId int) {
 	id, err := a.Cache.GetUser(a.Ctx, msgId)
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
+		return
+	} else if err != redis.Nil {
+		fmt.Println("no user")
 		return
 	}
 	err = a.Cache.SetBan(a.Ctx, id)
