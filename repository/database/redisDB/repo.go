@@ -24,7 +24,7 @@ type UsersInterface interface {
 }
 
 func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
-	return r.db.Set(ctx, strconv.Itoa(msgId), userId, time.Hour*24).Err()
+	return r.db.Set(ctx, strconv.Itoa(msgId), userId, time.Hour*48).Err()
 }
 
 func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
