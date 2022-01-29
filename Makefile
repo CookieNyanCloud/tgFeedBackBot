@@ -1,7 +1,7 @@
 run:
 	go run main.go
 
-build:
+up:
 	docker-compose up --build
 
-.PHONY: run build
+.PHONY: run up

@@ -3,10 +3,11 @@ package sotatgbot
 import (
 	"context"
 	"fmt"
+
 	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
-	"github.com/CookieNyanCloud/tgFeedBackBot/repository"
+	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
 	"github.com/go-redis/redis/v8"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 const (
@@ -16,16 +17,16 @@ const (
 )
 
 type Actions struct {
-	Cache *repository.Repo
-	Bot   *tgbotapi.BotAPI
 	Ctx   context.Context
+	Cache *redisDB.Repo
+	Bot   *tgbotapi.BotAPI
 	Cfg   *configs.Conf
 }
 
 func NewActions(
-	cache *repository.Repo,
-	bot *tgbotapi.BotAPI,
 	ctx context.Context,
+	cache *redisDB.Repo,
+	bot *tgbotapi.BotAPI,
 	cfg *configs.Conf) *Actions {
 	return &Actions{
 		Cache: cache,
@@ -45,6 +46,7 @@ type ActionsInterface interface {
 func (a *Actions) StartMsg(chatId int64) {
 	msg := tgbotapi.NewMessage(chatId, welcome)
 	_, _ = a.Bot.Send(msg)
+
 }
 
 func (a *Actions) ReplyToMsg(chatId int, txt string) {
@@ -71,9 +73,9 @@ func (a *Actions) SendMsg(chatId int64, msgId int) {
 		FromChatID: chatId,
 		MessageID:  msgId,
 	}
-	msg.ReplyMarkup = tgbotapi.ReplyKeyboardHide{
-		HideKeyboard: false,
-		Selective:    false,
+	msg.ReplyMarkup = tgbotapi.ReplyKeyboardRemove{
+		RemoveKeyboard: false,
+		Selective:      false,
 	}
 	forwarded, _ := a.Bot.Send(msg)
 	err := a.Cache.SetUser(a.Ctx, chatId, forwarded.MessageID)
@@ -90,9 +92,6 @@ func (a *Actions) BanUser(msgId int) {
 		msgtext := fmt.Sprintf(redErr, err)
 		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
 		_, _ = a.Bot.Send(msg)
-		return
-	} else if err != redis.Nil {
-		fmt.Println("no user")
 		return
 	}
 	err = a.Cache.SetBan(a.Ctx, id)

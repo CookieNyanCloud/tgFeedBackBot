@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
-	"github.com/CookieNyanCloud/tgFeedBackBot/repository"
-	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
-	"github.com/CookieNyanCloud/tgFeedBackBot/sotatgbot"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
+	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
+	"github.com/CookieNyanCloud/tgFeedBackBot/sotatgbot"
+	"github.com/go-redis/redis/v8"
 
 	"syscall"
 )
@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatalf(dbErr, err)
 	}
-	cache := repository.NewRepo(redisClient.Client)
+	cache := redisDB.NewRepo(redisClient.Client)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
@@ -51,7 +51,7 @@ func main() {
 	}(ctx, redisClient.Client)
 
 	bot, updates := sotatgbot.StartSotaBot(conf.Token)
-	act := sotatgbot.NewActions(cache, bot, ctx, conf)
+	act := sotatgbot.NewActions(ctx, cache, bot, conf)
 	for update := range updates {
 		if update.Message == nil {
 			continue
@@ -60,8 +60,6 @@ func main() {
 		if update.Message.Command() == "start" {
 			act.StartMsg(update.Message.Chat.ID)
 			continue
-		} else if update.Message.IsCommand() {
-			continue
 		}
 
 		if act.CheckBanUser(update.Message.Chat.ID) {
@@ -69,7 +67,7 @@ func main() {
 		}
 
 		if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage != nil {
-			if update.Message.Text == "ban!" {
+			if update.Message.Command() == "ban" {
 				act.BanUser(update.Message.ReplyToMessage.MessageID)
 				continue
 			} else {
@@ -80,6 +78,5 @@ func main() {
 			continue
 		}
 		act.SendMsg(update.Message.Chat.ID, update.Message.MessageID)
-
 	}
 }

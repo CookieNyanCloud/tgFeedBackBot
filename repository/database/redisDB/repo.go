@@ -1,10 +1,11 @@
-package repository
+package redisDB
 
 import (
 	"context"
-	"github.com/go-redis/redis/v8"
 	"strconv"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 type Repo struct {
@@ -23,15 +24,11 @@ type UsersInterface interface {
 }
 
 func (r *Repo) SetUser(ctx context.Context, userId int64, msgId int) error {
-	err := r.db.Set(ctx, string(msgId), userId, time.Hour*24).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.Set(ctx, strconv.Itoa(msgId), userId, time.Hour*24).Err()
 }
 
 func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
-	idStr, err := r.db.Get(ctx, string(msgId)).Result()
+	idStr, err := r.db.Get(ctx, strconv.Itoa(msgId)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -44,22 +41,10 @@ func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 
 func (r *Repo) SetBan(ctx context.Context, userId int64) error {
 	idStr := strconv.FormatInt(userId, 10)
-	err := r.db.Set(ctx, "ban_"+idStr, true, time.Hour*100).Err()
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.db.Set(ctx, idStr, true, time.Hour*100).Err()
 }
 
 func (r *Repo) GetBan(ctx context.Context, userId int64) (bool, error) {
 	idStr := strconv.FormatInt(userId, 10)
-	stateStr, err := r.db.Get(ctx, "ban_"+idStr).Result()
-	if err != nil {
-		return false, err
-	}
-	state, err := strconv.ParseBool(stateStr)
-	if err != nil {
-		return false, err
-	}
-	return state, err
+	return r.db.Get(ctx, idStr).Bool()
 }
