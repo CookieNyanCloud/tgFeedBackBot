@@ -32,11 +32,7 @@ func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return id, err
+	return strconv.ParseInt(idStr, 10, 64)
 }
 
 func (r *Repo) SetBan(ctx context.Context, userId int64) error {
