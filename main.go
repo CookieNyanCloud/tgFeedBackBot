@@ -75,12 +75,24 @@ func main() {
 					act.ReplyToMsgTxt(update.Message.ReplyToMessage.MessageID, update.Message.Text)
 					continue
 				}
-				if update.Message.Photo != nil {
-					act.ReplyToMsgPhoto(update.Message.ReplyToMessage.MessageID, update.Message.Photo[len(update.Message.Photo)-1].FileID)
-					continue
-				}
 				if update.Message.Document != nil {
 					act.ReplyToMsgFile(update.Message.ReplyToMessage.MessageID, update.Message.Document.FileID)
+					continue
+				}
+				if update.Message.Photo != nil {
+					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Photo[len(update.Message.Photo)-1].FileID, "photo")
+					continue
+				}
+				if update.Message.Video != nil {
+					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Video.FileID, "video")
+					continue
+				}
+				if update.Message.Sticker != nil {
+					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Sticker.FileID, "sticker")
+					continue
+				}
+				if update.Message.Voice != nil {
+					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Voice.FileID, "voice")
 					continue
 				}
 				continue

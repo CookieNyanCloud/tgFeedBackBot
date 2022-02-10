@@ -38,7 +38,7 @@ func NewActions(
 
 type ActionsInterface interface {
 	ReplyToMsgTxt(chatId int, txt string)
-	ReplyToMsgPhoto(chatId int, photoID string)
+	ReplyToMsgMedia(chatId int, photoID string)
 	ReplyToMsgFile(chatId int, txt string)
 	SendMsg(chatId int64, msgId int)
 	BanUser(msgId int)
@@ -66,7 +66,7 @@ func (a *Actions) ReplyToMsgTxt(chatId int, txt string) {
 	_, _ = a.Bot.Send(msg)
 }
 
-func (a *Actions) ReplyToMsgPhoto(chatId int, photoID string) {
+func (a *Actions) ReplyToMsgMedia(chatId int, mediaID string, tgType string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
 	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
@@ -77,9 +77,20 @@ func (a *Actions) ReplyToMsgPhoto(chatId int, photoID string) {
 		fmt.Println("no user")
 		return
 	}
-	photo := tgbotapi.FileID(photoID)
-	msg := tgbotapi.NewPhoto(id, photo)
+	media := tgbotapi.FileID(mediaID)
+	var msg tgbotapi.Chattable
+	switch tgType {
+	case "photo":
+		msg = tgbotapi.NewPhoto(id, media)
+	case "video":
+		msg = tgbotapi.NewVideo(id, media)
+	case "sticker":
+		msg = tgbotapi.NewSticker(id, media)
+	case "voice":
+		msg = tgbotapi.NewVoice(id, media)
+	}
 	_, _ = a.Bot.Send(msg)
+
 }
 
 func (a *Actions) ReplyToMsgFile(chatId int, fileID string) {
