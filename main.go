@@ -8,12 +8,12 @@ import (
 	"os/signal"
 	"time"
 
+	"syscall"
+
 	"github.com/CookieNyanCloud/tgFeedBackBot/configs"
 	"github.com/CookieNyanCloud/tgFeedBackBot/repository/database/redisDB"
 	"github.com/CookieNyanCloud/tgFeedBackBot/sotatgbot"
 	"github.com/go-redis/redis/v8"
-
-	"syscall"
 )
 
 const (
@@ -71,7 +71,18 @@ func main() {
 				act.BanUser(update.Message.ReplyToMessage.MessageID)
 				continue
 			} else {
-				act.ReplyToMsg(update.Message.ReplyToMessage.MessageID, update.Message.Text)
+				if update.Message.Text != "" {
+					act.ReplyToMsgTxt(update.Message.ReplyToMessage.MessageID, update.Message.Text)
+					continue
+				}
+				if update.Message.Photo != nil {
+					act.ReplyToMsgPhoto(update.Message.ReplyToMessage.MessageID, update.Message.Photo[len(update.Message.Photo)-1].FileID)
+					continue
+				}
+				if update.Message.Document != nil {
+					act.ReplyToMsgFile(update.Message.ReplyToMessage.MessageID, update.Message.Document.FileID)
+					continue
+				}
 				continue
 			}
 		} else if update.Message.Chat.ID == conf.Chat && update.Message.ReplyToMessage == nil {

@@ -37,7 +37,9 @@ func NewActions(
 }
 
 type ActionsInterface interface {
-	ReplyToMsg(chatId int, txt string)
+	ReplyToMsgTxt(chatId int, txt string)
+	ReplyToMsgPhoto(chatId int, photoID string)
+	ReplyToMsgFile(chatId int, txt string)
 	SendMsg(chatId int64, msgId int)
 	BanUser(msgId int)
 	CheckBanUser(chatId int64) bool
@@ -49,7 +51,7 @@ func (a *Actions) StartMsg(chatId int64) {
 
 }
 
-func (a *Actions) ReplyToMsg(chatId int, txt string) {
+func (a *Actions) ReplyToMsgTxt(chatId int, txt string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
 	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
@@ -64,8 +66,39 @@ func (a *Actions) ReplyToMsg(chatId int, txt string) {
 	_, _ = a.Bot.Send(msg)
 }
 
-func (a *Actions) SendMsg(chatId int64, msgId int) {
+func (a *Actions) ReplyToMsgPhoto(chatId int, photoID string) {
+	id, err := a.Cache.GetUser(a.Ctx, chatId)
+	if err != nil && err != redis.Nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return
+	} else if err == redis.Nil {
+		fmt.Println("no user")
+		return
+	}
+	photo := tgbotapi.FileID(photoID)
+	msg := tgbotapi.NewPhoto(id, photo)
+	_, _ = a.Bot.Send(msg)
+}
 
+func (a *Actions) ReplyToMsgFile(chatId int, fileID string) {
+	id, err := a.Cache.GetUser(a.Ctx, chatId)
+	if err != nil && err != redis.Nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return
+	} else if err == redis.Nil {
+		fmt.Println("no user")
+		return
+	}
+	file := tgbotapi.RequestFileData(tgbotapi.FileID(fileID))
+	msg := tgbotapi.NewDocument(id, file)
+	_, _ = a.Bot.Send(msg)
+}
+
+func (a *Actions) SendMsg(chatId int64, msgId int) {
 	msg := tgbotapi.ForwardConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID: a.Cfg.Chat,
