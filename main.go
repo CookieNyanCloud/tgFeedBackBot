@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"time"
 
 	"syscall"
@@ -70,6 +72,16 @@ func main() {
 			if update.Message.Command() == "ban" {
 				act.BanUser(update.Message.ReplyToMessage.MessageID)
 				continue
+			} else if update.Message.Command() == "id-send" {
+				args := make([]string, 2)
+				args = strings.Split(update.Message.CommandArguments(), "%")
+				id, err := strconv.Atoi(args[0])
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				act.ReplyToMsgTxtById(int64(id), args[1])
+				continue
 			} else {
 				if update.Message.Text != "" {
 					act.ReplyToMsgTxt(update.Message.ReplyToMessage.MessageID, update.Message.Text)
@@ -80,11 +92,11 @@ func main() {
 					continue
 				}
 				if update.Message.Photo != nil {
-					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Photo[len(update.Message.Photo)-1].FileID, "photo")
+					act.ReplyToMsgPhotoVideo(update.Message.ReplyToMessage.MessageID, update.Message.Photo[len(update.Message.Photo)-1].FileID, "photo", update.Message.Caption)
 					continue
 				}
 				if update.Message.Video != nil {
-					act.ReplyToMsgMedia(update.Message.ReplyToMessage.MessageID, update.Message.Video.FileID, "video")
+					act.ReplyToMsgPhotoVideo(update.Message.ReplyToMessage.MessageID, update.Message.Video.FileID, "video", update.Message.Caption)
 					continue
 				}
 				if update.Message.Sticker != nil {

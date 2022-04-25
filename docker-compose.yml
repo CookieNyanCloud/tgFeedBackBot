@@ -5,6 +5,7 @@ services:
     image: 'redis:latest'
     env_file:
       - .env
+    restart: unless-stopped
 
   tg-sota-feedback:
     image: tg-sota-feedback

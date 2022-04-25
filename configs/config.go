@@ -29,8 +29,8 @@ func InitConf() (*Conf, error) {
 
 func envVar(local bool) (*Conf, error) {
 
+	err := godotenv.Load(".env")
 	if local {
-		err := godotenv.Load(".env")
 		if err != nil {
 			return &Conf{}, err
 		}

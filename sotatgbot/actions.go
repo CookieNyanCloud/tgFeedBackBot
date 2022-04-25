@@ -38,7 +38,9 @@ func NewActions(
 
 type ActionsInterface interface {
 	ReplyToMsgTxt(chatId int, txt string)
-	ReplyToMsgMedia(chatId int, photoID string)
+	ReplyToMsgTxtById(id int64, txt string)
+	ReplyToMsgMedia(chatId int, mediaID string, tgType string)
+	ReplyToMsgPhotoVideo(chatId int, mediaID string, tgType, text string)
 	ReplyToMsgFile(chatId int, txt string)
 	SendMsg(chatId int64, msgId int)
 	BanUser(msgId int)
@@ -49,6 +51,11 @@ func (a *Actions) StartMsg(chatId int64) {
 	msg := tgbotapi.NewMessage(chatId, welcome)
 	_, _ = a.Bot.Send(msg)
 
+}
+
+func (a *Actions) ReplyToMsgTxtById(id int64, txt string) {
+	msg := tgbotapi.NewMessage(id, txt)
+	_, _ = a.Bot.Send(msg)
 }
 
 func (a *Actions) ReplyToMsgTxt(chatId int, txt string) {
@@ -66,7 +73,7 @@ func (a *Actions) ReplyToMsgTxt(chatId int, txt string) {
 	_, _ = a.Bot.Send(msg)
 }
 
-func (a *Actions) ReplyToMsgMedia(chatId int, mediaID string, tgType string) {
+func (a *Actions) ReplyToMsgMedia(chatId int, mediaID, tgType string) {
 	id, err := a.Cache.GetUser(a.Ctx, chatId)
 	if err != nil && err != redis.Nil {
 		msgtext := fmt.Sprintf(redErr, err)
@@ -80,10 +87,6 @@ func (a *Actions) ReplyToMsgMedia(chatId int, mediaID string, tgType string) {
 	media := tgbotapi.FileID(mediaID)
 	var msg tgbotapi.Chattable
 	switch tgType {
-	case "photo":
-		msg = tgbotapi.NewPhoto(id, media)
-	case "video":
-		msg = tgbotapi.NewVideo(id, media)
 	case "sticker":
 		msg = tgbotapi.NewSticker(id, media)
 	case "voice":
@@ -91,6 +94,30 @@ func (a *Actions) ReplyToMsgMedia(chatId int, mediaID string, tgType string) {
 	}
 	_, _ = a.Bot.Send(msg)
 
+}
+
+func (a *Actions) ReplyToMsgPhotoVideo(chatId int, mediaID, tgType, text string) {
+	id, err := a.Cache.GetUser(a.Ctx, chatId)
+	if err != nil && err != redis.Nil {
+		msgtext := fmt.Sprintf(redErr, err)
+		msg := tgbotapi.NewMessage(a.Cfg.Chat, msgtext)
+		_, _ = a.Bot.Send(msg)
+		return
+	} else if err == redis.Nil {
+		fmt.Println("no user")
+		return
+	}
+	media := tgbotapi.FileID(mediaID)
+	switch tgType {
+	case "photo":
+		msg := tgbotapi.NewPhoto(id, media)
+		msg.Caption = text
+		_, _ = a.Bot.Send(msg)
+	case "video":
+		msg := tgbotapi.NewVideo(id, media)
+		msg.Caption = text
+		_, _ = a.Bot.Send(msg)
+	}
 }
 
 func (a *Actions) ReplyToMsgFile(chatId int, fileID string) {
