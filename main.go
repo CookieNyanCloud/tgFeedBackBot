@@ -72,7 +72,7 @@ func main() {
 			if update.Message.Command() == "ban" {
 				act.BanUser(update.Message.ReplyToMessage.MessageID)
 				continue
-			} else if update.Message.Command() == "id-send" {
+			} else if update.Message.Command() == "idsend" {
 				args := make([]string, 2)
 				args = strings.Split(update.Message.CommandArguments(), "%")
 				id, err := strconv.Atoi(args[0])
