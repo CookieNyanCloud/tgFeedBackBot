@@ -37,7 +37,7 @@ func (r *Repo) GetUser(ctx context.Context, msgId int) (int64, error) {
 
 func (r *Repo) SetBan(ctx context.Context, userId int64) error {
 	idStr := strconv.FormatInt(userId, 10)
-	return r.db.Set(ctx, idStr, true, time.Hour*168).Err()
+	return r.db.Set(ctx, idStr, true,0).Err()
 }
 
 func (r *Repo) GetBan(ctx context.Context, userId int64) (bool, error) {
